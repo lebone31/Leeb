@@ -1,1 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Make a Wish</title>
 
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at top, #1a1a1a, #000);
+    font-family: Arial, sans-serif;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* Title */
+h1 {
+    color: white;
+    margin-bottom: 40px;
+    font-weight: 400;
+    letter-spacing: 2px;
+}
+
+/* Candle base */
+.candle {
+    width: 70px;
+    height: 200px;
+    background: linear-gradient(to right, #fefefe, #e6e6e6, #ffffff);
+    border-radius: 15px;
+    position: relative;
+    box-shadow: 
+        0 0 20px rgba(255,255,255,0.1),
+        inset -5px 0 10px rgba(0,0,0,0.1);
+}
+
+/* Wax drip effect */
+.candle::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 10px;
+    height: 30px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 10px;
+}
+
+/* Flame */
+.flame {
+    width: 28px;
+    height: 60px;
+    background: radial-gradient(circle at 50% 40%, #ffd54a, #ff6a00, #ff2d00);
+    border-radius: 50%;
+    position: absolute;
+    top: -50px;
+    left: 21px;
+    box-shadow: 0 0 35px rgba(255,140,0,0.9);
+    animation: flicker 0.12s infinite alternate;
+    transition: opacity 0.5s ease;
+}
+
+/* inner flame glow */
+.flame::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 30px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    top: 10px;
+    left: 7px;
+}
+
+/* flicker animation */
+@keyframes flicker {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.08); }
+}
+
+/* Button */
+button {
+    margin-top: 30px;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    background: white;
+    font-weight: bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Make a Wish ✨</h1>
+
+<div class="candle">
+    <div class="flame" id="flame"></div>
+</div>
+
+<button onclick="playSong()">Play me 🎵</button>
+
+<!-- 🎵 LOCAL SONG (YOU MUST UPLOAD mp3 to GitHub repo) -->
+<audio id="song">
+    <source src="happy-birthday.mp3" type="audio/mp3">
+</audio>
+
+<script>
+
+let flameOn = true;
+let silenceTime = 0;
+
+const flame = document.getElementById("flame");
+
+// 🎵 SONG
+function playSong() {
+    const song = document.getElementById("song");
+    song.currentTime = 0;
+    song.play().catch(() => {
+        alert("Upload happy-birthday.mp3 to your GitHub repo first.");
+    });
+}
+
+// 🌬️ MICROPHONE DETECTION
+navigator.mediaDevices.getUserMedia({ audio: true })
+.then(stream => {
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const mic = audioCtx.createMediaStreamSource(stream);
+    const analyser = audioCtx.createAnalyser();
+
+    mic.connect(analyser);
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function loop() {
+        analyser.getByteFrequencyData(data);
+
+        let volume = data.reduce((a,b)=>a+b)/data.length;
+
+        // 💨 blow out
+        if (volume > 25 && flameOn) {
+            flameOn = false;
+            flame.style.opacity = "0";
+        }
+
+        // 🔥 relight
+        if (!flameOn) {
+            silenceTime++;
+
+            if (silenceTime > 80) {
+                flameOn = true;
+                silenceTime = 0;
+                flame.style.opacity = "1";
+            }
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+})
+.catch(() => {
+    alert("Allow microphone access to use blow feature.");
+});
+
+</script>
+
+</body>
+</html>
